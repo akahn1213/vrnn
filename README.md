@@ -1,4 +1,4 @@
-This package is a code supplement to the paper *Anomalous Jet Tagging Via Sequence Modeling*: (arxiv link)
+This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling*: https://arxiv.org/abs/2105.09274
 
 The package contains the same model used to produce the results of the paper, with a small dataset to provide a proof-of-concept scenario of the model.
 

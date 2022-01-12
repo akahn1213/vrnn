@@ -1,11 +1,8 @@
-import math
 import torch
 import torch.nn as nn
 import torch.utils
 import torch.utils.data
-from torchvision import datasets, transforms
 from torch.autograd import Variable
-import matplotlib.pyplot as plt 
 
 class VRNN(nn.Module):
   def __init__(self, x_dim, hlv_dim, h_dim, z_dim, n_layers, train_hlvs, bias=False):
@@ -103,6 +100,7 @@ class VRNN(nn.Module):
     for t in range(x.size(0)):
       
       phi_x_t = self.phi_x(x[t]).to(device)
+
       #encoder
       if(self.train_hlvs):
         enc_t = self.enc(torch.cat([phi_x_t, h[-1], y], 1)).to(device)
@@ -117,7 +115,7 @@ class VRNN(nn.Module):
       prior_mean_t = self.prior_mean(prior_t).to(device)
       prior_std_t = self.prior_std(prior_t).to(device)
 
-      #sampling and reparameterization
+      #latent space
       z_t = self.reparam(enc_mean_t, enc_std_t).to(device)
       phi_z_t = self.phi_z(z_t).to(device)
 

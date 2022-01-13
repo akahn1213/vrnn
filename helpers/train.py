@@ -14,213 +14,85 @@ from sklearn.metrics import roc_curve, auc
 
 import time
 
+def get_data(sample, sample_type, n_consts, n_jets, hlv_means=None, hlv_stds=None):
 
-def get_data(infile = None, n_const = None):
-    if(infile is None): infile = h5py.File(dataDir+"events_anomalydetection_"+sample+"_VRNN_"+proc+"_"+str(maxconsts)+"C"+suffix+"_preprocessed.hdf5", "r+")
-    data = dict()
+    consts = dict()
     avg_jets = dict()
     hlvs = dict()
     vecs = dict()
-    all_hlvs = []
-    jetgroup = infile["jets/top"+topN]
-    for n_c in jetgroup.keys():
-      if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
-        print(n_c, np.shape(jetgroup[n_c+"/hlvs"]))
-        for i in range(len(jetgroup[n_c+"/hlvs"][()])):
-          all_hlvs.append(jetgroup[n_c+"/hlvs"][(i)])
-          #print(n_c, i, jetgroup[n_c+"/hlvs"][(i)])
-    all_hlvs = np.array(all_hlvs)
-    hlv_means = np.mean(all_hlvs, axis=0)
-    hlv_stds = np.std(all_hlvs, axis=0)
-    for n_c in jetgroup.keys():
-      if(len(jetgroup[n_c+"/constituents"][()]) > 0):
-        tmp_consts = jetgroup[n_c+"/constituents"][()]
-        data.update({n_c: tmp_consts})
-        avg_jets.update({n_c: np.mean(tmp_consts, axis=0)[:,0]})
-      if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
-        hlvs.update({n_c: (jetgroup[n_c+"/hlvs"][()] - hlv_means)/hlv_stds})
-      else:
-        hlvs.update({n_c: jetgroup[n_c+"/hlvs"]})
-      vecs.update({n_c: jetgroup[n_c+"/4vecs"]}) 
-    n_events = len(infile["events"].keys())
-    return data, hlvs, hlv_means, hlv_stds, n_events, avg_jets, vecs
 
-def get_val_data(hlv_means, hlv_stds, infile = None, n_const = None):
-    if(infile is None): infile = h5py.File(dataDir+"events_anomalydetection_Background_VRNN_"+proc+"_"+str(maxconsts)+"C"+suffix+"_preprocessed.hdf5", "r+")
-    data = dict()
-    hlvs = dict()
-    vecs = dict()
-    jetgroup = infile["jets/top"+topN]
-    for n_c in jetgroup.keys():
-      if(len(jetgroup[n_c+"/constituents"][()]) > 0):
-        tmp_consts = jetgroup[n_c+"/constituents"][()]
-        data.update({n_c: tmp_consts})
-      if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
-        hlvs.update({n_c: (jetgroup[n_c+"/hlvs"][()] - hlv_means)/hlv_stds})
-      else:
-        hlvs.update({n_c: jetgroup[n_c+"/hlvs"]})
-      vecs.update({n_c: jetgroup[n_c+"/4vecs"]}) 
-    n_events = len(infile["events"].keys())
-    return data, hlvs, n_events, vecs
-
-def get_anom_data(hlv_means, hlv_stds, infile = None, n_const = None):
-    if(infile is None): infile = h5py.File(dataDir+"events_anomalydetection_"+sample.replace("Contaminated","Signal")+"_VRNN_"+proc+"_"+str(maxconsts)+"C"+suffix+"_preprocessed.hdf5", "r+")
-    data = dict()
-    hlvs = dict()
-    vecs = dict()
-    jetgroup = infile["jets/top"+topN]
-    for n_c in jetgroup.keys():
-      if(len(jetgroup[n_c+"/constituents"][()]) > 0):
-        tmp_consts = jetgroup[n_c+"/constituents"][()]
-        data.update({n_c: tmp_consts})
-      if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
-        hlvs.update({n_c: (jetgroup[n_c+"/hlvs"][()] - hlv_means)/hlv_stds})
-      else:
-        hlvs.update({n_c: jetgroup[n_c+"/hlvs"]})
-      vecs.update({n_c: jetgroup[n_c+"/4vecs"]}) 
-    n_events = len(infile["events"].keys())
-    return data, hlvs, n_events, vecs
-
-def train(epoch):
-  train_loss = 0
-  total_batches = 0
-  for n_c in data_train.keys():
-    if(int(n_c.replace("C","")) in const_list):
-      start = time.time()
-      n_jets = len(data_train[n_c])
-      total_batches += n_jets/batch_size
-      batch_counter = 0
-      avgs = avg_jets[n_c]
-      while(batch_counter < n_jets and batch_counter < max_batches*batch_size):
-        batch_start = time.time()
-        batch_step = min(batch_size, n_jets - batch_counter)
-        data = torch.tensor(data_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        hlvs = torch.tensor(hlvs_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        data = Variable(data.transpose(0, 1))
-        optimizer.zero_grad()
-        kld_loss, nll_loss, loss, y_mean = model(data, hlvs, avgs, kl_weight)
-        #kld_loss, nll_loss, loss, y_mean = model(data)
-        loss.backward()
-        optimizer.step()
-
-        #grad norm clipping, only in pytorch version >= 1.10
-        nn.utils.clip_grad_norm(model.parameters(), clip)
-
-        train_loss += loss.data
-        batch_counter += batch_step
-
+    with h5py.File(f"{data_dir}events_anomalydetection_{sample}_{sample_type}_VRNN_{n_consts}C_preprocessed.hdf5", "r+") as infile:  
       
-  print('====> Epoch: {} Average loss: {:.4f}'.format(
-    epoch, train_loss / (max_batches)))
-    #epoch, train_loss / (total_batches)))
-  train_loss /= total_batches
+      jetgroup = infile[f"jets/top{n_jets}"]
+      
+      if sample_type == "Contaminated":
+          all_hlvs = []
+          for n_c in jetgroup.keys():
+            if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
+              print(n_c, np.shape(jetgroup[n_c+"/hlvs"]))
+              for i in range(len(jetgroup[n_c+"/hlvs"][()])):
+                all_hlvs.append(jetgroup[n_c+"/hlvs"][(i)])
+          all_hlvs = np.array(all_hlvs)
+          hlv_means = np.mean(all_hlvs, axis=0)
+          hlv_stds = np.std(all_hlvs, axis=0)
+      
+      for n_c in jetgroup.keys():
+        if(len(jetgroup[n_c+"/constituents"][()]) > 0):
+          tmp_consts = jetgroup[n_c+"/constituents"][()]
+          consts.update({n_c: tmp_consts})
+          avg_jets.update({n_c: np.mean(tmp_consts, axis=0)[:,0]})
+        if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
+          hlvs.update({n_c: (jetgroup[n_c+"/hlvs"][()] - hlv_means)/hlv_stds})
+        else:
+          hlvs.update({n_c: jetgroup[n_c+"/hlvs"]})
+        vecs.update({n_c: jetgroup[n_c+"/4vecs"]}) 
+      n_events = len(infile["events"].keys())
+    
+    return consts, hlvs, vecs, n_events, hlv_means, hlv_stds, avg_jets
 
-  return train_loss.cpu().numpy()
+def run_model(run_type, consts, hlvs, avg_jets, kl_weight, epoch):
 
-def test(epoch):
-  v_loss = 0
+  global const_list
+  global batch_size
+
+  kld_losses = []
+  run_loss = 0
   total_batches = 0
-  for n_c in data_val.keys():
+  for n_c in consts.keys():
     if(int(n_c.replace("C","")) in const_list):
-      n_jets = len(data_val[n_c])
+      start = time.time()
+      n_jets = len(consts[n_c])
       total_batches += n_jets/batch_size
       batch_counter = 0
-      avgs = avg_jets[n_c]
-      #for i in range(len(batched_val)):
-      while(batch_counter < n_jets):
-        batch_step = min(batch_size, n_jets - batch_counter)
-        data = torch.tensor(data_val[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        hlvs = torch.tensor(hlvs_val[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        data = Variable(data.transpose(0, 1))
-        kld_loss, nll_loss, loss, y_mean = model(data, hlvs, avgs, kl_weight)
-        #kld_loss, nll_loss, loss, y_mean = model(data)
-        v_loss += loss.data
-        batch_counter += batch_step
-
-  v_loss /= total_batches 
-  return v_loss
-
-def evaluate_training(hlv_means, hlv_stds, n_events):
-  kld_losses = []
-  print("Evaluating Training")
-  for n_c in data_train.keys():
-    if(int(n_c.replace("C","")) in const_list):
-      start = time.time()
-      n_jets = len(data_train[n_c])
-      batch_counter = 0
-      avgs = avg_jets[n_c]
       while(batch_counter < n_jets and batch_counter < max_batches*batch_size):
         batch_start = time.time()
         batch_step = min(batch_size, n_jets - batch_counter)
-        data = torch.tensor(data_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        #print(data.size())
-        hlvs = torch.tensor(hlvs_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        vecs = torch.tensor(vecs_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        data = Variable(data.transpose(0, 1))
-        #kld_loss, _, _, y_mean = model(data)
-        kld_loss, _, _, y_mean = model(data, hlvs, avgs, kl_weight)
-        loss_kld = kld_loss.data.cpu().numpy()
-        kld_losses = np.concatenate((kld_losses, loss_kld))
+        consts_tensor = torch.tensor(consts_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
+        hlvs_tensor = torch.tensor(hlvs_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
+        consts_tensor = Variable(consts_tensor.transpose(0, 1))
+        
+        if run_type == "Train":
+          optimizer.zero_grad()
+        
+        kld_loss, nll_loss, loss, y_mean = model(consts_tensor, hlvs_tensor, avg_jets[n_c], kl_weight)
+        if run_type == "Evaluate":
+          kld_losses = np.concatenate((kld_losses, kld_loss.data.cpu().numpy()))
+        
+        if run_type == "Train":
+          loss.backward()
+          optimizer.step()
+          nn.utils.clip_grad_norm(model.parameters(), clip)
 
+        run_loss += loss.data
         batch_counter += batch_step
+  
+  print('====> {} -- Epoch: {} Average loss: {:.4f}'.format(run_type, epoch, run_loss / (max_batches)))
+  
+  run_loss /= total_batches
 
-  return kld_losses
+  return run_loss.cpu().numpy(), kld_losses
 
-def evaluate_validation(hlv_means, hlv_stds, n_events):
-  kld_losses = []
-  print("Evaluating Validation")
-
-  for n_c in data_val.keys():
-    if(int(n_c.replace("C","")) in const_list):
-      start = time.time()
-      n_jets = len(data_val[n_c])
-      batch_counter = 0
-      avgs = avg_jets[n_c]
-      while(batch_counter < n_jets and batch_counter < max_batches*batch_size):
-        batch_start = time.time()
-        batch_step = min(batch_size, n_jets - batch_counter)
-        data = torch.tensor(data_val[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        hlvs = torch.tensor(hlvs_val[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        vecs = torch.tensor(vecs_val[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        data = Variable(data.transpose(0, 1))
-        #kld_loss, _, _, y_mean = model(data)
-        kld_loss, _, _, y_mean = model(data, hlvs, avgs, kl_weight)
-        loss_kld = kld_loss.data.cpu().numpy()
-        kld_losses = np.concatenate((kld_losses, loss_kld))
-
-        batch_counter += batch_step
-
-  return kld_losses
-
-def evaluate_anom(hlv_means, hlv_stds, n_events):
-  kld_losses = []
-  print("Evaluating Anom")
-  for n_c in data_anom.keys():
-    if(int(n_c.replace("C","")) in const_list):
-      start = time.time()
-      n_jets = len(data_anom[n_c])
-      batch_counter = 0
-      avgs = avg_jets[n_c]
-      while(batch_counter < n_jets and batch_counter < max_batches*batch_size):
-        batch_start = time.time()
-        batch_step = min(batch_size, n_jets - batch_counter)
-        data = torch.tensor(data_anom[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        hlvs = torch.tensor(hlvs_anom[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        vecs = torch.tensor(vecs_anom[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
-        data = Variable(data.transpose(0, 1))
-        #kld_loss, _, _, y_mean = model(data)
-        kld_loss, _, _, y_mean = model(data, hlvs, avgs, kl_weight)
-        loss_kld = kld_loss.data.cpu().numpy()
-        kld_losses = np.concatenate((kld_losses, loss_kld))
-
-        batch_counter += batch_step
-
-  return kld_losses
-
-
-
-
-def train(sample, topN, maxconsts, kl_weight, h_dim, z_dim):
+def train(args):
 
   #hyperparameters
   x_dim = 3
@@ -230,7 +102,7 @@ def train(sample, topN, maxconsts, kl_weight, h_dim, z_dim):
   clip = 10
   learning_rate = 1e-5
   l2_norm = 0
-  batch_size = 256
+  global batch_size = 256
   seed = 128
   print_every = 100
   save_every = 1
@@ -241,7 +113,7 @@ def train(sample, topN, maxconsts, kl_weight, h_dim, z_dim):
 
   load = bool(int(sys.argv[5]))
 
-  dataDir = 'Output_h5/'
+  data_dir = 'Output_h5/'
   
   
   
@@ -267,9 +139,6 @@ def train(sample, topN, maxconsts, kl_weight, h_dim, z_dim):
       if exc.errno != errno.EEXIST:
         raise
 
-
-
-  
   roc_trend = []
   roc_v_trend = []
   
@@ -284,12 +153,12 @@ def train(sample, topN, maxconsts, kl_weight, h_dim, z_dim):
   torch.manual_seed(seed)
   #plt.ion()
   
-  data_train, hlvs_train, hlv_means, hlv_stds, n_train_events, avg_jets, vecs_train = get_data()
-  data_val, hlvs_val, n_val_events, vecs_val = get_val_data(hlv_means, hlv_stds)
-  data_anom, hlvs_anom, n_anom_events, vecs_anom = get_anom_data(hlv_means, hlv_stds)
+  consts_train, hlvs_train, vecs_train, n_train_events, hlv_means, hlv_stds, avg_jets = get_data(args.sample, "Contaminated", args.n_consts, args.n_jets)
+  consts_val, hlvs_val, vecs_val, n_val_events, _, _, _ = get_data(args.sample, "Background", args.n_consts, args.n_jets, hlv_means, hlv_stds)
+  consts_anom, hlvs_anom, vecs_anom, n_anom_events, _, _, _ = get_data(args.sample, "Signal", args.n_consts, args.n_jets, hlv_means, hlv_stds)
   
-  print(data_train.keys())
-  const_list = range(3, maxconsts+1)
+  print(consts_train.keys())
+  global const_list = range(3, maxconsts+1)
   
   losses_train = []
   losses_val = []

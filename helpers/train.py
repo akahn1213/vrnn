@@ -116,15 +116,10 @@ def train(args):
   data_dir = 'Output_h5/'
   
   
-  
-  if(train_hlvs):
-    train_name = "lhco_train_"+sample+"_"+str(maxconsts)+"_"+proc+"_"+"top"+topN+suffix+"_"+str(kl_weight).replace(".","p")+"_"+str(h_dim)+"_"+str(z_dim)
-  else:
-    train_name = "lhco_train_"+sample+"_"+str(maxconsts)+"_"+proc+"_"+"top"+topN+suffix+"_"+str(kl_weight).replace(".","p")+"_"+str(h_dim)+"_"+str(z_dim)+"_constonly"
+  train_name = f"lhco_train_{sample}_{maxconsts}_{proc}_top{topN}_{str(kl_weight).replace('.','p')}_{str(h_dim)}_{str(z_dim)"
   
   if not os.path.exists(sys.path[0]+"/plots/"+train_name):
     try:
-      os.makedirs(sys.path[0]+"/plots/"+train_name)
       os.makedirs(sys.path[0]+"/plots/"+train_name+"/roc")
       os.makedirs(sys.path[0]+"/plots/"+train_name+"/scores")
       os.makedirs(sys.path[0]+"/plots/"+train_name+"/trends")
@@ -147,11 +142,6 @@ def train(args):
   print("CUDA Device:", torch.cuda.get_device_name())
   torch.cuda.set_device(cuda_idx)
   print("CUDA Index:", torch.cuda.current_device())
-  
-  
-  #manual seed
-  torch.manual_seed(seed)
-  #plt.ion()
   
   consts_train, hlvs_train, vecs_train, n_train_events, hlv_means, hlv_stds, avg_jets = get_data(args.sample, "Contaminated", args.n_consts, args.n_jets)
   consts_val, hlvs_val, vecs_val, n_val_events, _, _, _ = get_data(args.sample, "Background", args.n_consts, args.n_jets, hlv_means, hlv_stds)

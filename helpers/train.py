@@ -8,6 +8,7 @@ from model import VRNN
 import numpy as np
 import pickle
 import h5py
+import plotting
 
 import sys, os
 from sklearn.metrics import roc_curve, auc
@@ -50,7 +51,7 @@ def get_data(sample, sample_type, n_consts, n_jets, hlv_means=None, hlv_stds=Non
     
     return consts, hlvs, vecs, n_events, hlv_means, hlv_stds, avg_jets
 
-def run_model(run_type, consts, hlvs, avg_jets, kl_weight, epoch):
+def run_model(consts, hlvs, avg_jets, kl_weight, epoch):
 
   global const_list
   global batch_size
@@ -71,17 +72,14 @@ def run_model(run_type, consts, hlvs, avg_jets, kl_weight, epoch):
         hlvs_tensor = torch.tensor(hlvs_train[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
         consts_tensor = Variable(consts_tensor.transpose(0, 1))
         
-        if run_type == "Train":
-          optimizer.zero_grad()
+        optimizer.zero_grad()
         
         kld_loss, nll_loss, loss, y_mean = model(consts_tensor, hlvs_tensor, avg_jets[n_c], kl_weight)
-        if run_type == "Evaluate":
-          kld_losses = np.concatenate((kld_losses, kld_loss.data.cpu().numpy()))
+        kld_losses = np.concatenate((kld_losses, kld_loss.data.cpu().numpy()))
         
-        if run_type == "Train":
-          loss.backward()
-          optimizer.step()
-          nn.utils.clip_grad_norm(model.parameters(), clip)
+        loss.backward()
+        optimizer.step()
+        nn.utils.clip_grad_norm(model.parameters(), clip)
 
         run_loss += loss.data
         batch_counter += batch_step
@@ -115,8 +113,7 @@ def train(args):
 
   data_dir = 'Output_h5/'
   
-  
-  train_name = f"lhco_train_{sample}_{maxconsts}_{proc}_top{topN}_{str(kl_weight).replace('.','p')}_{str(h_dim)}_{str(z_dim)"
+  train_name = f"lhco_train_{sample}_{maxconsts}_{proc}_top{topN}_{str(kl_weight).replace('.','p')}_{h_dim}_{z_dim}"
   
   if not os.path.exists(sys.path[0]+"/plots/"+train_name):
     try:
@@ -134,8 +131,6 @@ def train(args):
       if exc.errno != errno.EEXIST:
         raise
 
-  roc_trend = []
-  roc_v_trend = []
   
   print("CUDA Available:", torch.cuda.is_available())
   print("CUDA Version:", torch.version.cuda)
@@ -152,6 +147,8 @@ def train(args):
   
   losses_train = []
   losses_val = []
+  roc_trend = []
+  roc_v_trend = []
   model = VRNN(x_dim, hlv_dim, h_dim, z_dim, n_layers, train_hlvs)
   optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=l2_norm)
   do_train=True
@@ -165,35 +162,33 @@ def train(args):
     for epoch in range(1, n_epochs + 1):
       l_train = 0
       l_val = 0
-      l_anom = 0 
       #training + testing
       start_time = time.time()
       model.train()
-      l_train = train(epoch)
+      l_train, scores_train = run_model(consts_train, hlvs_train, avg_jets, kl_weight, epoch)
       model.eval()
-      l_val = test(epoch)
-      print("Time: ", time.time() - start_time)
+      with torch.no_grad():
+        l_val, scores_val = run_model(consts_val, hlvs_val, avg_jets, kl_weight, epoch)
+        l_anom, scores_anom = run_model(consts_anom, hlvs_anom, avg_jets, kl_weight, epoch)
       losses_train.append(l_train)
       losses_val.append(l_val)
       
       if(epoch % eval_every == 0):
-        eval_time = time.time()
-        scores_normal = evaluate_training(hlv_means, hlv_stds, n_train_events)
-        scores_val = evaluate_validation(hlv_means, hlv_stds, n_val_events)
-        scores_anom = evaluate_anom(hlv_means, hlv_stds, n_anom_events)
-  
-        print("Evaluating Time:", time.time()-eval_time)
-  
-        scores_normal = 1-np.exp(np.multiply(scores_normal, -1))
+
+        #Evaluate training, validation, signal
+
+        #Transform
+        scores_train = 1-np.exp(np.multiply(scores_train, -1))
         scores_val = 1-np.exp(np.multiply(scores_val, -1))
         scores_anom = 1-np.exp(np.multiply(scores_anom, -1))
   
-        scores_all = scores_normal
+        #Make ROCs
+        scores_all = scores_train
         scores_all = np.append(scores_all, scores_anom)
         scores_all_val = scores_val
         scores_all_val = np.append(scores_all_val, scores_anom)
   
-        labels = np.append(np.zeros(len(scores_normal)), np.ones(len(scores_anom)))
+        labels = np.append(np.zeros(len(scores_train)), np.ones(len(scores_anom)))
         labels_val = np.append(np.zeros(len(scores_val)), np.ones(len(scores_anom)))
   
         fpr, tpr, _ = roc_curve(labels, scores_all)
@@ -201,21 +196,14 @@ def train(args):
   
         roc_auc = auc(fpr, tpr) # compute area under the curve
         roc_auc_v = auc(fpr_v, tpr_v) # compute area under the curve
-  
-        np.save("plots/"+train_name+"/roc/fpr_train_all_"+train_name+"_epoch_"+str(epoch)+".npy", fpr)
-        np.save("plots/"+train_name+"/roc/tpr_train_all_"+train_name+"_epoch_"+str(epoch)+".npy", tpr)
-        np.save("plots/"+train_name+"/roc/fpr_v_all_"+train_name+"_epoch_"+str(epoch)+".npy", fpr_v)
-        np.save("plots/"+train_name+"/roc/tpr_v_all_"+train_name+"_epoch_"+str(epoch)+".npy", tpr_v)
-  
-        np.save("plots/"+train_name+"/scores/scores_normal_all_"+train_name+"_epoch_"+str(epoch)+".npy", scores_normal)
-        np.save("plots/"+train_name+"/scores/scores_val_all_"+train_name+"_epoch_"+str(epoch)+".npy", scores_val)
-        np.save("plots/"+train_name+"/scores/scores_anom_all_"+train_name+"_epoch_"+str(epoch)+".npy", scores_anom)
-  
+
+        #Make ROC Plots
+
+         
+        plotting.make_roc(fpr, tpr, fpr_v, tpr_v, roc_auc, roc_auc_v, epoch, train_name)
+
         roc_trend.append(roc_auc)
         roc_v_trend.append(roc_auc_v)
-  
-        np.save("plots/"+train_name+"/trends/roc_t_train_scratch_"+proc+"_"+sample+"_Top"+topN+"_"+str(maxconsts)+"_ep"+str(epoch)+"_"+str(kl_weight).replace(".","p")+"_"+str(h_dim)+"_"+str(z_dim)+".npy", roc_trend)
-        np.save("plots/"+train_name+"/trends/roc_v_train_scratch_"+proc+"_"+sample+"_Top"+topN+"_"+str(maxconsts)+"_ep"+str(epoch)+"_"+str(kl_weight).replace(".","p")+"_"+str(h_dim)+"_"+str(z_dim)+".npy", roc_v_trend)
   
         print("Epoch: "+str(epoch)+": Max "+str(maxconsts)+" Constituents Evaluation:")
         print("Training AUC:", roc_auc)
@@ -228,6 +216,8 @@ def train(args):
         print('Saved model to '+fn)
   
   
-    #Save training losses
-    np.save("plots/"+train_name+"/trends/losses_train_"+train_name+".npy", losses_train)
-    np.save("plots/"+train_name+"/trends/losses_val_"+train_name+".npy", losses_val)
+    #Save training losses and AUROC trends
+    np.save(f"plots/{train_name}/trends/losses_train_{train_name}.npy", losses_train)
+    np.save(f"plots/{train_name}/trends/losses_val_{train_name}.npy", losses_val)
+    np.save(f"plots/{train_name}/trends/aucs_train_{train_name}.npy", roc_trend)
+    np.save(f"plots/{train_name}/trends/aucs_val_{train_name}.npy", roc_v_trend)

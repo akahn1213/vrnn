@@ -15,6 +15,8 @@ from sklearn.metrics import roc_curve, auc
 
 import time
 
+batch_size = 256
+
 def get_data(sample, sample_type, n_consts, n_jets, hlv_means=None, hlv_stds=None):
 
     consts = dict()
@@ -100,7 +102,6 @@ def train(args):
   clip = 10
   learning_rate = 1e-5
   l2_norm = 0
-  global batch_size = 256
   seed = 128
   print_every = 100
   save_every = 1
@@ -199,7 +200,6 @@ def train(args):
 
         #Make ROC Plots
 
-         
         plotting.make_roc(fpr, tpr, fpr_v, tpr_v, roc_auc, roc_auc_v, epoch, train_name)
 
         roc_trend.append(roc_auc)

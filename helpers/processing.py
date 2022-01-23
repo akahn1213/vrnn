@@ -2,6 +2,7 @@ import numpy as np
 from skhep.math.vectors import *
 import h5py
 import os
+import copy
 
 data_dir=""
 out_dir = "Output_h5/"
@@ -26,8 +27,8 @@ n_consts_min = 3
 def process(n_consts_max):
 
   for sample_name in samples_dict.keys():
-    if os.path.exists(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_ProcR_{n_consts_max}C_preprocessed.hdf5"):
-      os.remove(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_ProcR_{n_consts_max}C_preprocessed.hdf5")
+    if os.path.exists(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_{n_consts_max}C_preprocessed.hdf5"):
+      os.remove(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_{n_consts_max}C_preprocessed.hdf5")
   
     sorted_constituents_list = []
     sorted_hlvs_list = []
@@ -87,7 +88,6 @@ def process(n_consts_max):
           hlv = hlvs[eventnum][jn].tolist()
           jet4vec = d
   
-  
           if(np.isnan(hlv).any()): continue
   
   
@@ -110,7 +110,7 @@ def process(n_consts_max):
             c = data[eventnum][jn][i] #Current constituent
             if(c[0] < 1e-15): 
               last_const = i
-              continue #Stop after no more constituents (only zeros)
+              break #Stop after no more constituents (only zeros)
             cst = LorentzVector()
             cst.setptetaphim(c[0], c[1], c[2], 0)
             jet += cst
@@ -178,7 +178,7 @@ def process(n_consts_max):
             c = data[eventnum][jn][i] #Current constituent
             if(c[0] < 1e-15): 
               last_const = i
-              continue #Stop after no more constituents (only zeros)
+              break #Stop after no more constituents (only zeros)
             cst = LorentzVector()
             cst.setptetaphim(c[0], c[1], c[2], 0)
             cst = cst.rotatez(-phi)
@@ -202,7 +202,7 @@ def process(n_consts_max):
             c = data[eventnum][jn][i] #Current constituent
             if(c[0] < 1e-15): 
               last_const = i
-              continue #Stop after no more constituents (only zeros)
+              break #Stop after no more constituents (only zeros)
             cst = LorentzVector()
             cst.setptetaphim(c[0], c[1], c[2], 0)
             cst = cst.rotatez(-phi)
@@ -548,7 +548,7 @@ def process(n_consts_max):
           if(n_c < n_consts_min): continue
   
           #Add jet to event
-          outfile = h5py.File(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_ProcR_{n_consts_max}C_preprocessed.hdf5", "a")
+          outfile = h5py.File(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_{n_consts_max}C_preprocessed.hdf5", "a")
           outfile.create_dataset(f"events/{event_counter}/jet{jet_counter}/constituents", data=constituents)
           outfile.create_dataset(f"events/{event_counter}/jet{jet_counter}/hlvs", data=hlv)
           outfile.create_dataset(f"events/{event_counter}/jet{jet_counter}/4vec", data=jet4vec)
@@ -561,26 +561,26 @@ def process(n_consts_max):
               sorted_constituents_list[i][str(n_c)].append(constituents)
               sorted_hlvs_list[i][str(n_c)].append(hlv)
               sorted_4vecs_list[i][str(n_c)].append(jet4vec)
-  
+          
   
           jet_counter += 1
           jets_processed += 1
   
-          if(jets_processed%1000 == 0):
-            print('Jets processed: ', jets_processed)
           
           good_event = True
   
         if(good_event): event_counter += 1
+        if(event_counter%100 == 0):
+          print('Events processed: ', event_counter)
   
     print("Total processed events: ", event_counter)
     print("Total unprocessed events: ", event_counter_unprocessed)
   
-    outfile = h5py.File(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_ProcR_{n_consts_max}C_preprocessed.hdf5", "a")
+    outfile = h5py.File(f"{out_dir}events_anomalydetection_{sample_name}_VRNN_{n_consts_max}C_preprocessed.hdf5", "a")
     for i in range(n_consts_min, n_consts_max+1):
       for j in range(10):
-        outfile.create_dataset("jets/top{j+1}/{i}C/constituents", data=sorted_constituents_list[j][str(i)])
-        outfile.create_dataset("jets/top{j+1}/{i}C/hlvs", data=sorted_hlvs_list[j][str(i)])
-        outfile.create_dataset("jets/top{j+1}/{i}C/4vecs", data=sorted_4vecs_list[j][str(i)])
+        outfile.create_dataset(f"jets/top{j+1}/{i}C/constituents", data=sorted_constituents_list[j][str(i)])
+        outfile.create_dataset(f"jets/top{j+1}/{i}C/hlvs", data=sorted_hlvs_list[j][str(i)])
+        outfile.create_dataset(f"jets/top{j+1}/{i}C/4vecs", data=sorted_4vecs_list[j][str(i)])
     outfile.close()  
   

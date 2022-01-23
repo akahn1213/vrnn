@@ -5,7 +5,7 @@ import sys, os
 
 from sklearn.metrics import roc_curve, auc
 
-plots_dir = "plots/evaluation/"
+
 
 def make_roc_plot(fpr, tpr, fpr_v, tpr_v, roc_auc, roc_auc_v, epoch, train_name):
   
@@ -18,7 +18,7 @@ def make_roc_plot(fpr, tpr, fpr_v, tpr_v, roc_auc, roc_auc_v, epoch, train_name)
   plt.ylabel('True Positive Rate', fontsize=16)
   plt.title(f'ROC: Epoch {epoch}', fontsize=16)
   plt.legend(loc="lower right", fontsize=12)
-  plt.savefig(f"{plots_dir}roc_{train_name}_epoch{epoch}.png")
+  plt.savefig(f"plots/{train_name}/evaluation/roc_epoch{epoch}.png")
   plt.clf()
 
 def otherplots():

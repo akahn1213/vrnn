@@ -1,0 +1,28 @@
+defaults:
+    process: "store_true"
+    train: "store_true"
+    evaluate: "store_true"
+    draw_plots: "store_true"
+    n_jets: 1
+    n_consts: 20
+    kl_weight: 0.1
+    h_dim: 16
+    z_dim: 2
+    sample: "2Prong"
+    
+help:
+    process: "Pre-Process Data"
+    train: "Train Model"
+    evaluate: "Evaluate Model"
+    draw_plots: "Draw Plots"
+    n_jets: "Maximum number of jets to consider per event, sorted in pT 
+            decreasing"
+    n_consts: "Maximum number of constituents to consider per jet, sorted in pT 
+            decreasing"
+    kl_weight: "Weight of the KL-Divergence in the loss term"
+    h_dim: "Hidden layer dimensionality"
+    z_dim: "Latent layer dimensionality"
+    sample: "Sample to train/evaluate over"
+
+
+

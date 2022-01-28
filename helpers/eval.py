@@ -69,7 +69,7 @@ def make_eval_data(sample_set, vecs_dict, hlvs_dict, scores, const_list, train_n
         j_s12.append(hlvs[i][8]) 
         j_s23.append(hlvs[i][9]) 
 
-    j_pt  = np.array(j_pt)
+    j_pt = np.array(j_pt)
     j_m  = np.array(j_m)
     j_eta  = np.array(j_eta)
     j_phi  = np.array(j_phi)
@@ -103,6 +103,29 @@ def make_eval_data(sample_set, vecs_dict, hlvs_dict, scores, const_list, train_n
     save_data.append(j_s23)
 
     save_data = np.array(save_data)
-    np.save(f"eval_data/{train_name}_eval_data.npy", save_data)
+    np.save(f"eval_data/{sample_set.lower()}_{train_name}_eval_data.npy", save_data)
     print(f"Saved {sample_set} Evaluation Data to: eval_data/{sample_set.lower()}_{train_name}_eval_data.npy")
+            
+def get_eval_data(filename):
+    
+    eval_data = np.load(filename)
+        
+    jet_dict = dict()
 
+    jet_dict["pt"] = eval_data[0]
+    jet_dict["m"] = eval_data[1]
+    jet_dict["eta"] = eval_data[2]
+    jet_dict["phi"] = eval_data[3]
+    jet_dict["score"] = eval_data[4]
+    jet_dict["c2"] = eval_data[5]
+    jet_dict["d2"] = eval_data[6]
+    jet_dict["t1"] = eval_data[7]
+    jet_dict["t2"] = eval_data[8]
+    jet_dict["t3"] = eval_data[9]
+    jet_dict["t21"] = eval_data[10]
+    jet_dict["t32"] = eval_data[11]
+    jet_dict["t31"] = eval_data[12]
+    jet_dict["s12"] = eval_data[13]
+    jet_dict["s23"] = eval_data[14]
+
+    return jet_dict

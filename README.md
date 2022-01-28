@@ -1,14 +1,17 @@
 ## Introduction
 
-This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling*:<br>
-[IOPScience](https://doi.org/10.1088/1748-0221/16/08/P08012)<br/>[arXiv](https://arxiv.org/abs/2105.09274)
+This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling* by Kahn et. al.
 
 The package contains the same model used to produce the results of the paper, with a small dataset to provide a proof-of-concept scenario of the model.
+
+#### Paper Links
+* [IOPScience](https://doi.org/10.1088/1748-0221/16/08/P08012)
+* [arXiv](https://arxiv.org/abs/2105.09274)
 
 ## Contents
 
 * main.py
-    * Primary script to run all aspected of pre-processing, training, and evaluation
+    * Primary script to run pre-processing, training, and evaluation
 * model.py 
     * Model definition in PyTorch
 * helpers/processing.py
@@ -22,7 +25,8 @@ The package contains the same model used to produce the results of the paper, wi
 * helpers/defaults.yaml
     * Definition of default argument values
 * unprocessed_data/
-    * Small datasets for both 2 and 3 prong signal hypotheses. Contains both contaminated datasets as well as background and signal sets independently. Number of events: 1000 Background, 100 signal for both 2 and 3 prong
+    * Small datasets for both 2 and 3 prong signal hypotheses. Contains both contaminated datasets as well as background and signal sets independently 
+        * Number of events: 1000 Background, 100 signal for both 2 and 3 prong
 
 
 ## Usage

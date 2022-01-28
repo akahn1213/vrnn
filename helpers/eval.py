@@ -1,18 +1,6 @@
-import torch.nn as nn
-import torch.utils
-import torch.utils.data
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-import matplotlib.pyplot as plt 
-from model import VRNN
 import numpy as np
-import pickle
-import h5py
-
-import sys, os
-from sklearn.metrics import roc_curve, auc
-
-import time
+import sys
+import os
 
 def make_eval_data(sample_set, vecs_dict, hlvs_dict, scores, const_list, train_name):
 

@@ -1,20 +1,16 @@
 import torch.nn as nn
 import torch.utils
-import torch.utils.data
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-import matplotlib.pyplot as plt 
-from model import VRNN
+#import torch.utils.data
+#from torchvision import datasets, transforms
 import numpy as np
-import pickle
 import h5py
+import sys
+import os
 import helpers.plotting as plotting
 import helpers.eval as eval
-
-import sys, os
+from torch.autograd import Variable
 from sklearn.metrics import roc_curve, auc
-
-import time
+from model import VRNN
 
 batch_size = 256
 const_list = list()
@@ -55,7 +51,6 @@ def get_data(sample_type, sample_set, n_consts, n_jets, hlv_means=None, hlv_stds
             all_hlvs = []
             for n_c in jetgroup.keys():
                 if(len(jetgroup[n_c+"/hlvs"][()]) > 0):
-                    print(n_c, np.shape(jetgroup[n_c+"/hlvs"]))
                     for i in range(len(jetgroup[n_c+"/hlvs"][()])):
                         all_hlvs.append(jetgroup[n_c+"/hlvs"][(i)])
             all_hlvs = np.array(all_hlvs)
@@ -87,12 +82,10 @@ def run_model(consts, hlvs, avg_jets, kl_weight, model, optimizer, epoch, train=
         n_c = str(c)+"C"
         if not n_c in consts.keys(): continue
         else:
-            start = time.time()
             n_jets = len(consts[n_c])
             total_batches += n_jets/batch_size
             batch_counter = 0
             while(batch_counter < n_jets and batch_counter < max_batches*batch_size):
-                batch_start = time.time()
                 batch_step = min(batch_size, n_jets - batch_counter)
                 consts_tensor = torch.tensor(consts[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
                 hlvs_tensor = torch.tensor(hlvs[n_c][batch_counter:batch_counter+batch_step]).float().cuda()
@@ -107,7 +100,7 @@ def run_model(consts, hlvs, avg_jets, kl_weight, model, optimizer, epoch, train=
                 if train: 
                     loss.backward()       
                     optimizer.step()
-                    nn.utils.clip_grad_norm(model.parameters(), clip)
+                    nn.utils.clip_grad_norm_(model.parameters(), clip)
     
                 run_loss += loss.data
                 batch_counter += batch_step
@@ -152,7 +145,6 @@ def train(args):
     consts_val, hlvs_val, vecs_val, n_val_events, _, _, _ = get_data(args.sample, "Background", args.n_consts, args.n_jets, hlv_means, hlv_stds)
     consts_anom, hlvs_anom, vecs_anom, n_anom_events, _, _, _ = get_data(args.sample, "Signal", args.n_consts, args.n_jets, hlv_means, hlv_stds)
   
-    print(consts_train.keys())
     global const_list
     const_list = range(3, args.n_consts+1)
   
@@ -174,7 +166,6 @@ def train(args):
             l_train = 0
             l_val = 0
             # training + testing
-            start_time = time.time()
             model.train()
             l_train, scores_train = run_model(consts_train, hlvs_train, avg_jets, args.kl_weight, model, optimizer, epoch, True)
             model.eval()

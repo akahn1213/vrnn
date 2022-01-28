@@ -1,13 +1,9 @@
 import matplotlib.pyplot as plt 
 import numpy as np
-from matplotlib.colors import LogNorm
-import sys, os
-
+import sys
+import os
 from sklearn.metrics import roc_curve, auc
-
 from helpers.eval import get_eval_data
-
-
 
 def make_roc_plot(fpr, tpr, fpr_v, tpr_v, roc_auc, roc_auc_v, epoch, train_name):
   
@@ -64,7 +60,7 @@ def make_eval_plots(args):
     plt.hist(val_data["m"], bins=np.linspace(0, 2000, 70), alpha=0.6, histtype='step', linestyle='dashed', color='k', label=blab)
     plt.yscale("log")
     plt.xlim(0, 1500)
-    plt.ylim(1, 250000)
+    plt.ylim(1, 2500)
     plt.title("Leading Jet Mass", fontsize=16)
     plt.xlabel(r'$M_{J}$ [GeV]', fontsize=14)
     plt.legend(fontsize=12)
@@ -72,16 +68,16 @@ def make_eval_plots(args):
     print("Saved Plot:", f"{plots_dir}{args.sample}_J_Mass.png")
     plt.clf()
     
-    plt.hist(train_data["m"][np.nonzero(train_data["score"] > 0.65)], bins=np.linspace(0, 2000, 70), alpha = 0.6, label=clab)
-    plt.hist(anom_data["m"][np.nonzero(anom_data["score"] > 0.65)], bins=np.linspace(0, 2000, 70), alpha = 0.6, label=slab)
-    plt.hist(val_data["m"][np.nonzero(val_data["score"] > 0.65)], bins=np.linspace(0, 2000, 70), histtype='step', alpha = 0.6, linestyle='dashed', color='k', label=blab)
+    plt.hist(train_data["m"][np.nonzero(train_data["score"] > 0.6)], bins=np.linspace(0, 2000, 70), alpha = 0.6, label=clab)
+    plt.hist(anom_data["m"][np.nonzero(anom_data["score"] > 0.6)], bins=np.linspace(0, 2000, 70), alpha = 0.6, label=slab)
+    plt.hist(val_data["m"][np.nonzero(val_data["score"] > 0.6)], bins=np.linspace(0, 2000, 70), histtype='step', alpha = 0.6, linestyle='dashed', color='k', label=blab)
     plt.yscale("log")
     plt.xlim(0, 1500)
-    plt.ylim(1, 250000)
-    plt.title("Leading Jet Mass, Anomaly Score > 0.65", fontsize=16)
+    plt.ylim(1, 2500)
+    plt.title("Leading Jet Mass, Anomaly Score > 0.6", fontsize=16)
     plt.xlabel(r'$M_{J}$ [GeV]', fontsize=14)
     plt.legend(fontsize=12)
-    plt.savefig(f"{plots_dir}{args.sample}_J_Mass_AnomScore0p65.png")
-    print("Saved Plot:", f"{plots_dir}{args.sample}_J_Mass_AnomScore0p65.png")
+    plt.savefig(f"{plots_dir}{args.sample}_J_Mass_AnomScore0p6.png")
+    print("Saved Plot:", f"{plots_dir}{args.sample}_J_Mass_AnomScore0p6.png")
     plt.clf()
   

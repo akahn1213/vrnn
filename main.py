@@ -1,16 +1,10 @@
 import argparse
 import yaml
-import sys
 from helpers.processing import process
 from helpers.train import train
 from helpers.plotting import make_eval_plots
-#from helpers.evaluate import evaluate
-#from helpers.plotting import plot
-
 
 def main(args):
-
-    print(args)
 
     if args.process:
         process(args.n_consts)

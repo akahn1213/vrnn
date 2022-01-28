@@ -18,7 +18,7 @@ The package contains the same model used to produce the results of the paper, wi
     * Code to plot ROC curves, other evaluation plots using Matplotlib
 * helpers/eval.py
     * Helper functions to handle evaluation data
-*helpers/defaults.yaml
+* helpers/defaults.yaml
     * Definition of default argument values
 * unprocessed_data/
     * Small datasets for both 2 and 3 prong signal hypotheses. Contains both contaminated datasets as well as background and signal sets independently. Number of events: 1000 Background, 100 signal for both 2 and 3 prong
@@ -46,12 +46,7 @@ Example: ``` python main.py -p -t -d ```
 
 ## Output
 
-Processed data in .hdf5 format stored in the Output_h5/ directory
-Network weights in .pth format stored in the saves/ directory
-Evaluation data in .npy format stored in the eval_data/ directory
+Processed data in .hdf5 format stored in the Output_h5/ directory\
+Network weights in .pth format stored in the saves/ directory\
+Evaluation data in .npy format stored in the eval_data/ directory\
 Evaluation plots stored in the plots/ directory
-
-
-
-
-

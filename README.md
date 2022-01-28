@@ -1,6 +1,6 @@
 ## Introduction
 
-This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling*:<br>\
+This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling*:<br>
 [IOPScience](https://doi.org/10.1088/1748-0221/16/08/P08012)<br/>[arXiv](https://arxiv.org/abs/2105.09274)
 
 The package contains the same model used to produce the results of the paper, with a small dataset to provide a proof-of-concept scenario of the model.

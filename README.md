@@ -26,8 +26,7 @@ The package contains the same model used to produce the results of the paper, wi
     * Definition of default argument values
 * unprocessed_data/
     * Small datasets for both 2 and 3 prong signal hypotheses. Contains both contaminated datasets as well as background and signal sets independently 
-        * Number of events: 1000 Background, 100 signal for both 2 and 3 prong
-
+        * Number of events: 1000 Background, 100 Signal for both 2 and 3 prong
 
 ## Usage
 

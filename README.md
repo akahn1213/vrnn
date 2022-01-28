@@ -1,6 +1,6 @@
 ## Introduction
 
-This package is a code supplement to the paper *Anomalous Jet Identification Via Sequence Modeling* by Kahn et al.
+This package is a code supplement to the paper *Anomalous Jet Identification via Sequence Modeling* by Kahn et al.
 
 The package contains the same model used to produce the results of the paper, with a small dataset to provide a proof-of-concept scenario of the model.
 
